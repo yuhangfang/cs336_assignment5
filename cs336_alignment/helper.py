@@ -96,3 +96,8 @@ def get_response_log_probs(model, input_ids, labels, return_token_entropy=False)
         return {"log_probs": response_log_probs, "token_entropy": token_entropy}
     else:
         return {"log_probs": response_log_probs}
+
+def masked_normalize(tensor: torch.Tensor, mask: torch.Tensor, normalize_constant: float, dim: int | None= None) -> torch.Tensor:
+    if dim is None:
+        dim = tuple(range(tensor.ndim))
+    return (tensor * mask).sum(dim=dim, keepdim=False) / normalize_constant
