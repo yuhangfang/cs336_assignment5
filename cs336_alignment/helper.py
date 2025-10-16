@@ -68,3 +68,31 @@ def compute_entropy(logits: torch.Tensor) -> torch.Tensor:
     probs = torch.exp(log_probs)
     entropy = -torch.sum(probs * log_probs, dim=-1)
     return entropy
+
+def get_response_log_probs(model, input_ids, labels, return_token_entropy=False):
+    logits = model(input_ids).logits
+    log_probs = torch.log_softmax(logits, dim=-1)
+    
+    # log_probs: Shape (batch_size, sequence_length, vocab_size)
+    # Contains log probabilities for every token in the vocabulary at each position
+
+    # labels: Shape (batch_size, sequence_length)
+    # Contains the actual token IDs that should have been predicted
+
+    # labels.unsqueeze(-1): Shape (batch_size, sequence_length, 1)
+    # Adds a dimension at the end to match torch.gather's requirements
+
+    # torch.gather(log_probs, dim=-1, index=labels.unsqueeze(-1)):
+    # dim=-1 means we're gathering along the vocabulary dimension
+    # For each position, it selects the log probability corresponding to the actual token ID
+    # Output shape: (batch_size, sequence_length, 1)
+
+    # .squeeze(-1): Shape (batch_size, sequence_length)
+    # Removes that extra dimension we added
+    response_log_probs = torch.gather(log_probs, dim=-1, index=labels.unsqueeze(-1)).squeeze(-1)
+    
+    if return_token_entropy:
+        token_entropy = compute_entropy(logits)
+        return {"log_probs": response_log_probs, "token_entropy": token_entropy}
+    else:
+        return {"log_probs": response_log_probs}
