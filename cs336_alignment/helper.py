@@ -59,3 +59,12 @@ def tokenize_prompt_and_output(prompt_strs, output_strs, tokenizer):
         "labels": torch.tensor(labels),
         "response_mask": torch.tensor(response_mask)
     }
+
+def compute_entropy(logits: torch.Tensor) -> torch.Tensor:
+    # logits: shape [..., num_classes], raw logits (not probabilities)
+    # Compute the log-probabilities
+    lse = torch.logsumexp(logits, dim=-1, keepdim=True)
+    log_probs = logits - lse  # shape [..., num_classes]
+    probs = torch.exp(log_probs)
+    entropy = -torch.sum(probs * log_probs, dim=-1)
+    return entropy
